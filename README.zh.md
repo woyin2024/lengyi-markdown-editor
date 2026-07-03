@@ -2,7 +2,7 @@
 
 # Markdown 编辑器
 
-一款在浏览器里「即开即用」的 Markdown 写作工具。
+一款在浏览器里「即开即用」的 Markdown 写作工具。<br>
 **无安装、无账号、无订阅，你的文字只属于你。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![纯前端](https://img.shields.io/badge/Architecture-Pure%20Frontend-success)](./markdown-editor.html)[![多语言](https://img.shields.io/badge/I18N-10%20Languages-orange)](./i18n.js)
