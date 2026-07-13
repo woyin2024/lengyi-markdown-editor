@@ -528,6 +528,20 @@
       color: inherit;
       font-size: 0.9em;
     }
+    .preview-content pre {
+      position: relative;
+    }
+    .preview-content pre[data-language]:not([data-language=""])::before {
+      content: attr(data-language);
+      position: absolute;
+      top: 6px;
+      right: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
     .preview-content blockquote {
       margin: 0 0 20px;
       padding: 10px 24px;
@@ -1116,8 +1130,8 @@
         <button onclick="formatOrderedList()" data-i18n-title="ordered" title="有序列表"><svg class="icon"><use href="#icon-list-numbered"></use></svg> <span data-i18n="ordered">有序</span></button>
         <button onclick="formatTaskList()" data-i18n-title="task" title="任务列表"><svg class="icon"><use href="#icon-task"></use></svg> <span data-i18n="task">任务</span></button>
         <span class="divider"></span>
-        <button onclick="insertCodeRow()" data-i18n-title="inlineCode" title="行内代码"><svg class="icon"><use href="#icon-code"></use></svg> <span data-i18n="inlineCode">行内代码</span></button>
-        <button onclick="insertCode()" data-i18n-title="codeBlock" title="代码块"><svg class="icon"><use href="#icon-braces"></use></svg></button>
+        <button onclick="insertCodeRow()" data-i18n-title="inlineCode" title="代码块"><svg class="icon"><use href="#icon-code"></use></svg> <span data-i18n="codeBlock">代码块</span></button>
+        <button onclick="insertCode()" data-i18n-title="codeBlock" title="行内代码"><svg class="icon"><use href="#icon-braces"></use></svg><span data-i18n="inlineCode">行内代码</span></button>
         <button onclick="insertLink()" data-i18n-title="link" title="插入链接 Ctrl+K"><svg class="icon"><use href="#icon-link"></use></svg> <span data-i18n="link">链接</span></button>
         <button onclick="openImageModal()" data-i18n-title="image" title="插入图片 Ctrl+Shift+K"><svg class="icon"><use href="#icon-image"></use></svg> <span data-i18n="image">图片</span></button>
         <div class="dropdown" id="table-dropdown">
@@ -1493,6 +1507,24 @@
         gfm: true,
         headerIds: false,
         mangle: false
+      });
+      marked.use({
+        renderer: {
+          code(token) {
+            const { text, lang, escaped } = token;
+            let content = text;
+            if (!escaped) {
+              content = content.replace(/&/g, '&amp;')
+                               .replace(/</g, '&lt;')
+                               .replace(/>/g, '&gt;')
+                               .replace(/"/g, '&quot;')
+                               .replace(/'/g, '&#39;');
+            }
+            const language = lang ? `language-${lang}` : '';
+            const dataLang = lang ? `data-language="${lang}"` : '';
+            return `<pre ${dataLang}><code class="${language}">${content}</code></pre>`;
+          }
+        }
       });
     }
 
@@ -2272,7 +2304,19 @@ ${'</scr' + 'ipt>'}
     }
     function insertCodeRow() {
       pushHistory();
-      wrapSelection('`', '`');
+      const el = getActiveEditor();
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const text = el.value;
+      const selected = text.slice(start, end);
+      const insert = '```请在此输入代码块语言\n' + (selected || '请输入您的代码') + '\n```';
+      el.setRangeText(insert, start, end, 'select');
+      el.setSelectionRange(start + 3, start + 3 + '请在此输入代码块语言'.length);
+      syncEditorFromActive();
+      updatePreview();
+      updateCount();
+      autoSave();
+      el.focus();
     }
     function insertCode() {
       pushHistory();
@@ -2281,8 +2325,11 @@ ${'</scr' + 'ipt>'}
       const end = el.selectionEnd;
       const text = el.value;
       const selected = text.slice(start, end);
-      const insert = selected.includes('\n') ? '```\n' + selected + '\n```' : '`' + selected + '`';
+      const insert = '`' + (selected || '行内代码') + '`';
       el.setRangeText(insert, start, end, 'select');
+      if (!selected) {
+        el.setSelectionRange(start + 1, start + 1 + '行内代码'.length);
+      }
       syncEditorFromActive();
       updatePreview();
       updateCount();
